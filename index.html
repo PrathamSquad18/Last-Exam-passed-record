@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Exam Record Entry</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f7f8fb;
+      padding: 15px;
+      color: #222;
+      margin: 0;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 16px;
+      font-size: 20px;
+    }
+    form {
+      max-width: 600px;
+      margin: 0 auto 20px auto;
+      background: #fff;
+      padding: 15px;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    button {
+      margin-top: 14px;
+      padding: 10px 16px;
+      font-size: 15px;
+      border: none;
+      border-radius: 4px;
+      background: #3498db;
+      color: #fff;
+      cursor: pointer;
+      width: 100%;
+    }
+    button:hover {
+      background: #2980b9;
+    }
+    .table-container {
+    width: 100%;
+    overflow-x: auto; /* fallback agar columns jyada ho */
+    }
+    table {
+    width: 100%;       /* screen jitni hi width */
+    border-collapse: collapse;
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    th, td {
+    border: 1px solid #e6e6e6;
+    padding: 8px 6px;
+    text-align: center;
+    font-size: 14px;
+    word-wrap: break-word; /* small screens ke liye wrap */
+    }
+    th {
+      background: #fafafa;
+    }
+    .status-success {
+      color: green;
+      font-weight: 600;
+    }
+    .status-fail {
+      color: #c0392b;
+      font-weight: 600;
+    }
+    /* Responsive adjustments */
+    @media (max-width: 600px) {
+      h2 { font-size: 18px; }
+      label, input, button, th, td { font-size: 13px; }
+      form { padding: 12px; }
+      button { padding: 8px; }
+    }
+    
+    @media (max-width: 600px) {
+    th, td { font-size: 9px; padding: 6px 4px; }
+    h2 { font-size: 16px; 
+    }
+    }
+  </style>
+</head>
+<body>
+  <h2>Enter Semester Examination Record</h2>
+  <form id="examForm">
+    <label>Semester:
+      <input type="text" id="semester" placeholder="e.g. III" required>
+    </label>
+    <label>Month & Year of Passing:
+      <input type="text" id="monthYear" placeholder="e.g. June 2024" required>
+    </label>
+    <label>Exam Seat No.:
+      <input type="text" id="seatNo" placeholder="Enter seat number" required>
+    </label>
+    <label>Awarded Marks:
+      <input type="number" id="awarded" min="0" required>
+    </label>
+    <label>Maximum Marks:
+      <input type="number" id="maximum" min="1" required>
+    </label>
+    <button type="submit">Add Record</button>
+  </form>
+
+  <div class="table-container">
+    <table id="recordsTable">
+      <thead>
+        <tr>
+          <th>Semester</th>
+          <th>Month & Year</th>
+          <th>Seat No.</th>
+          <th>Awarded</th>
+          <th>Maximum</th>
+          <th>%</th>
+          <th>Remarks</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    const form = document.getElementById('examForm');
+    const tbody = document.querySelector('#recordsTable tbody');
+
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      
+      // Load data from localStorage on page load
+      document.addEventListener("DOMContentLoaded", () => {
+      let records = JSON.parse(localStorage.getItem("examRecords")) || [];
+      records.forEach(r => addRow(r));
+      });
+      
+      // Function to add record in table & save in localStorage
+      function saveRecord(sem, max, awarded, percent, result) {
+      let record = { sem, max, awarded, percent, result };
+      
+      // save in localStorage
+      let records = JSON.parse(localStorage.getItem("examRecords")) || [];
+      records.push(record);
+      localStorage.setItem("examRecords", JSON.stringify(records));
+      
+      // add row in table
+      addRow(record);
+      }
+      
+      // Function to clear storage + table
+      function clearAll() {
+      localStorage.removeItem("examRecords");
+      document.querySelector("#resultTable tbody").innerHTML = "";
+      }
+
+      const semester = document.getElementById('semester').value;
+      const monthYear = document.getElementById('monthYear').value;
+      const seatNo = document.getElementById('seatNo').value;
+      const awarded = parseFloat(document.getElementById('awarded').value);
+      const maximum = parseFloat(document.getElementById('maximum').value);
+      const percent = ((awarded/maximum)*100).toFixed(2);
+      const status = (percent >= 40) ? "Successful" : "Unsuccessful";
+      const statusClass = (percent >= 40) ? "status-success" : "status-fail";
+
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${semester}</td>
+        <td>${monthYear}</td>
+        <td>${seatNo}</td>
+        <td>${awarded}</td>
+        <td>${maximum}</td>
+        <td>${percent}%</td>
+        <td class="${statusClass}">${status}</td>
+      `;
+
+      tbody.appendChild(row);
+      form.reset();
+    });
+  </script>
+</body>
+</html>
