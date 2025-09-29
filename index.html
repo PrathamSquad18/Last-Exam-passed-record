@@ -54,21 +54,21 @@
       background: #2980b9;
     }
     .table-container {
-    width: 100%;
-    overflow-x: auto; /* fallback agar columns jyada ho */
+      width: 100%;
+      overflow-x: auto;
     }
     table {
-    width: 100%;       /* screen jitni hi width */
-    border-collapse: collapse;
-    background: #fff;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
     }
     th, td {
-    border: 1px solid #e6e6e6;
-    padding: 8px 6px;
-    text-align: center;
-    font-size: 14px;
-    word-wrap: break-word; /* small screens ke liye wrap */
+      border: 1px solid #e6e6e6;
+      padding: 8px 6px;
+      text-align: center;
+      font-size: 14px;
+      word-wrap: break-word;
     }
     th {
       background: #fafafa;
@@ -81,18 +81,26 @@
       color: #c0392b;
       font-weight: 600;
     }
-    /* Responsive adjustments */
+    .action-btn {
+      padding: 4px 8px;
+      font-size: 12px;
+      margin: 2px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .edit-btn { background: #f1c40f; color: #fff; }
+    .delete-btn { background: #e74c3c; color: #fff; }
+    .edit-btn:hover { background: #d4ac0d; }
+    .delete-btn:hover { background: #c0392b; }
+
     @media (max-width: 600px) {
       h2 { font-size: 18px; }
-      label, input, button, th, td { font-size: 13px; }
+      label, input, button, th, td { font-size: 10px; }
       form { padding: 12px; }
       button { padding: 8px; }
-    }
-    
-    @media (max-width: 600px) {
-    th, td { font-size: 9px; padding: 6px 4px; }
-    h2 { font-size: 16px; 
-    }
+      th, td { font-size: 8px; padding: 6px 4px; }
+      .action-btn { font-size: 10px; padding: 3px 6px; }
     }
   </style>
 </head>
@@ -128,6 +136,7 @@
           <th>Maximum</th>
           <th>%</th>
           <th>Remarks</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -137,34 +146,16 @@
   <script>
     const form = document.getElementById('examForm');
     const tbody = document.querySelector('#recordsTable tbody');
+    let editIndex = null; // track which record is being edited
+
+    // Load records from localStorage
+    document.addEventListener("DOMContentLoaded", () => {
+      let records = JSON.parse(localStorage.getItem("examRecords")) || [];
+      records.forEach((r, index) => addRow(r, index));
+    });
 
     form.addEventListener('submit', function(e){
       e.preventDefault();
-      
-      // Load data from localStorage on page load
-      document.addEventListener("DOMContentLoaded", () => {
-      let records = JSON.parse(localStorage.getItem("examRecords")) || [];
-      records.forEach(r => addRow(r));
-      });
-      
-      // Function to add record in table & save in localStorage
-      function saveRecord(sem, max, awarded, percent, result) {
-      let record = { sem, max, awarded, percent, result };
-      
-      // save in localStorage
-      let records = JSON.parse(localStorage.getItem("examRecords")) || [];
-      records.push(record);
-      localStorage.setItem("examRecords", JSON.stringify(records));
-      
-      // add row in table
-      addRow(record);
-      }
-      
-      // Function to clear storage + table
-      function clearAll() {
-      localStorage.removeItem("examRecords");
-      document.querySelector("#resultTable tbody").innerHTML = "";
-      }
 
       const semester = document.getElementById('semester').value;
       const monthYear = document.getElementById('monthYear').value;
@@ -172,23 +163,69 @@
       const awarded = parseFloat(document.getElementById('awarded').value);
       const maximum = parseFloat(document.getElementById('maximum').value);
       const percent = ((awarded/maximum)*100).toFixed(2);
-      const status = (percent >= 40) ? "Successful" : "Unsuccessful";
-      const statusClass = (percent >= 40) ? "status-success" : "status-fail";
+
+      let record = { semester, monthYear, seatNo, awarded, maximum, percent };
+
+      let records = JSON.parse(localStorage.getItem("examRecords")) || [];
+
+      if (editIndex !== null) {
+        records[editIndex] = record; // update
+        editIndex = null;
+      } else {
+        records.push(record); // add new
+      }
+
+      localStorage.setItem("examRecords", JSON.stringify(records));
+      renderTable();
+      form.reset();
+    });
+
+    function addRow(record, index){
+      const statusClass = (record.percent >= 40) ? "status-success" : "status-fail";
+      const status = (record.percent >= 40) ? "Successful" : "Unsuccessful";
 
       const row = document.createElement('tr');
       row.innerHTML = `
-        <td>${semester}</td>
-        <td>${monthYear}</td>
-        <td>${seatNo}</td>
-        <td>${awarded}</td>
-        <td>${maximum}</td>
-        <td>${percent}%</td>
+        <td>${record.semester}</td>
+        <td>${record.monthYear}</td>
+        <td>${record.seatNo}</td>
+        <td>${record.awarded}</td>
+        <td>${record.maximum}</td>
+        <td>${record.percent}%</td>
         <td class="${statusClass}">${status}</td>
+        <td>
+          <button class="action-btn edit-btn" onclick="editRecord(${index})">Edit</button>
+          <button class="action-btn delete-btn" onclick="deleteRecord(${index})">Delete</button>
+        </td>
       `;
-
       tbody.appendChild(row);
-      form.reset();
-    });
+    }
+
+    function renderTable(){
+      tbody.innerHTML = "";
+      let records = JSON.parse(localStorage.getItem("examRecords")) || [];
+      records.forEach((r, i) => addRow(r, i));
+    }
+
+    window.editRecord = function(index){
+      let records = JSON.parse(localStorage.getItem("examRecords")) || [];
+      let record = records[index];
+
+      document.getElementById('semester').value = record.semester;
+      document.getElementById('monthYear').value = record.monthYear;
+      document.getElementById('seatNo').value = record.seatNo;
+      document.getElementById('awarded').value = record.awarded;
+      document.getElementById('maximum').value = record.maximum;
+
+      editIndex = index;
+    }
+
+    window.deleteRecord = function(index){
+      let records = JSON.parse(localStorage.getItem("examRecords")) || [];
+      records.splice(index, 1);
+      localStorage.setItem("examRecords", JSON.stringify(records));
+      renderTable();
+    }
   </script>
 </body>
 </html>
